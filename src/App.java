@@ -68,6 +68,8 @@ public class App {
         app.selectImageFile();
         CompressQuadtree compressor = app.chooseCompressor();
         compressor.compress();
+        compressor.saveImageOutput();
+        compressor.output();
         app.close();
     }
 }
