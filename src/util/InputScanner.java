@@ -17,7 +17,7 @@ public class InputScanner {
             try {
                 return parser.apply(input);
             } catch (Exception e) {
-                System.out.println("Input tidak valid. Coba lagi.");
+                System.out.println("Input tidak valid: " + e.getMessage());
             }
         }
     }
@@ -28,12 +28,8 @@ public class InputScanner {
             if (!file.exists()) throw new IllegalArgumentException("File tidak ditemukan.");
             return file;
         });
-}
-
-    public String scanString(String prompt) {
-        System.out.print(prompt);
-        return scanner.nextLine();
     }
+
 
     public void close() {
         scanner.close();

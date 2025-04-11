@@ -29,10 +29,32 @@ public abstract class CompressQuadtree {
         this.imageFileInput = imageFileInput;
         this.imageInput = imageInput;
         this.input = input;
-        threshold = this.input.scan("[INPUT] Ambang batas (threshold): ", Double::parseDouble);
-        minBlockSize = this.input.scan("[INPUT] Ukuran blok minimum: ", Integer::parseInt);
-        // targetCompressionRate = this.input.scan("[INPUT] Target persentase kompresi (0 untuk nonaktif): ", Double::parseDouble);
-        String outputPath = this.input.scanString("[INPUT] Alamat absolut gambar hasil kompresi: ");
+        threshold = this.input.scan("[INPUT] Ambang batas (threshold): ", val -> {
+            double t = Double.parseDouble(val);
+            if (t < 0) throw new IllegalArgumentException("Threshold harus lebih dari 0.");
+            return t;
+        });
+        minBlockSize = this.input.scan("[INPUT] Ukuran blok minimum: ", val -> {
+            int b = Integer.parseInt(val);
+            if (b < 1) throw new IllegalArgumentException("Ukuran blok minimum harus lebih dari 1.");
+            return b;
+        });
+        String outputPath = this.input.scan("[INPUT] Alamat absolut gambar hasil kompresi: ", path -> {
+            File f = new File(path);
+            if (!f.isAbsolute()) {
+                throw new IllegalArgumentException("Path harus absolut. Contoh: /mnt/c/Users/... atau C:/Users/...");
+            }
+            File parent = f.getAbsoluteFile().getParentFile();
+            if (parent == null || !parent.exists() || !parent.isDirectory()) {
+                throw new IllegalArgumentException("Path tidak valid: direktori tujuan tidak ditemukan.");
+            }
+            String filename = f.getName().toLowerCase();
+            if (!(filename.endsWith(".png") || filename.endsWith(".jpg") || filename.endsWith(".jpeg") || filename.endsWith(".bmp"))) {
+                throw new IllegalArgumentException("Nama file harus berekstensi .png, .jpg, .jpeg, atau .bmp");
+            }
+        
+            return path;
+        });
         imageFileOutput = new File(outputPath);
 
         this.imageOutput = new BufferedImage(
