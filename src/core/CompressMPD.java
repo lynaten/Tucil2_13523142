@@ -12,9 +12,8 @@ public class CompressMPD extends CompressQuadtree {
     @Override
     public void compress() {
         logStart();
-        QuadBuilder.threshold = this.threshold;
-        QuadBuilder.minBlockSize = this.minBlockSize;
-        QuadNode tree = QuadBuilder.buildTree(
+        QuadBuilder builder = new MPDQuadBuilder(this.threshold, this.minBlockSize);
+        QuadNode tree = builder.buildTree(
             this.imageInput, imageOutput, 0, 0,
             this.imageInput.getWidth(), this.imageInput.getHeight()
         );
@@ -24,28 +23,30 @@ public class CompressMPD extends CompressQuadtree {
     }
 
     @Override
-    public void output(){
+    public void output() {
         System.out.println();
         System.out.println("====== HASIL KOMPRESI METODE MPD ======");
         super.output();
     }
 
-    private static class QuadNode {
-        public int depth = 1;
-        public int totalNodes = 1;
+    private static class QuadNodeMPD extends QuadNode {
         int minR = 255, maxR = 0;
         int minG = 255, maxG = 0;
         int minB = 255, maxB = 0;
         long rSum, gSum, bSum;
-        QuadNode[] children = new QuadNode[4];
+        public QuadNodeMPD() {
+            super();
+        }
     }
 
-    private static class QuadBuilder {
-        public static double threshold;
-        public static int minBlockSize;
+    private class MPDQuadBuilder extends QuadBuilder {
+        public MPDQuadBuilder(double threshold, int minBlockSize) {
+            super(threshold, minBlockSize);
+        }
 
-        public static QuadNode buildTree(BufferedImage image, BufferedImage result, int x, int y, int width, int height) {
-            QuadNode node = new QuadNode();
+        @Override
+        public QuadNode buildTree(BufferedImage image, BufferedImage result, int x, int y, int width, int height) {
+            QuadNodeMPD node = new QuadNodeMPD();
 
             if (width == 1 && height == 1) {
                 int rgb = image.getRGB(x, y);
@@ -80,16 +81,18 @@ public class CompressMPD extends CompressQuadtree {
 
             for (QuadNode child : node.children) {
                 if (child != null) {
-                    node.rSum += child.rSum;
-                    node.gSum += child.gSum;
-                    node.bSum += child.bSum;
+                    QuadNodeMPD childNode = (QuadNodeMPD) child;
 
-                    node.minR = Math.min(node.minR, child.minR);
-                    node.maxR = Math.max(node.maxR, child.maxR);
-                    node.minG = Math.min(node.minG, child.minG);
-                    node.maxG = Math.max(node.maxG, child.maxG);
-                    node.minB = Math.min(node.minB, child.minB);
-                    node.maxB = Math.max(node.maxB, child.maxB);
+                    node.rSum += childNode.rSum;
+                    node.gSum += childNode.gSum;
+                    node.bSum += childNode.bSum;
+
+                    node.minR = Math.min(node.minR, childNode.minR);
+                    node.maxR = Math.max(node.maxR, childNode.maxR);
+                    node.minG = Math.min(node.minG, childNode.minG);
+                    node.maxG = Math.max(node.maxG, childNode.maxG);
+                    node.minB = Math.min(node.minB, childNode.minB);
+                    node.maxB = Math.max(node.maxB, childNode.maxB);
 
                     maxChildDepth = Math.max(maxChildDepth, child.depth);
                     total += child.totalNodes;
@@ -101,6 +104,8 @@ public class CompressMPD extends CompressQuadtree {
 
             if (diff <= threshold || pixelCount <= minBlockSize) {
                 node.children = new QuadNode[4];
+                node.depth = 1;
+                node.totalNodes = 1;
 
                 int avgR = (int) Math.round((double) node.rSum / pixelCount);
                 int avgG = (int) Math.round((double) node.gSum / pixelCount);
@@ -122,7 +127,7 @@ public class CompressMPD extends CompressQuadtree {
             return node;
         }
 
-        private static double calculateMaxDiff(QuadNode node) {
+        private double calculateMaxDiff(QuadNodeMPD node) {
             int dR = node.maxR - node.minR;
             int dG = node.maxG - node.minG;
             int dB = node.maxB - node.minB;

@@ -10,11 +10,10 @@ public class CompressVariance extends CompressQuadtree {
     }
 
     @Override
-    public void compress() {
+    public void compress(){
         logStart();
-        QuadBuilder.threshold = this.threshold;
-        QuadBuilder.minBlockSize = this.minBlockSize;
-        QuadNode tree = QuadBuilder.buildTree(
+        QuadBuilder builder = new VarianceQuadBuilder(this.threshold, this.minBlockSize);
+        QuadNode tree = builder.buildTree(
             this.imageInput, imageOutput, 0, 0,
             this.imageInput.getWidth(), this.imageInput.getHeight()
         );
@@ -26,24 +25,28 @@ public class CompressVariance extends CompressQuadtree {
     @Override
     public void output(){
         System.out.println();
-        System.out.println("====== HASIL KOMPRESI METHODE VARIANCE ======");
+        System.out.println("====== HASIL KOMPRESI METODE VARIANCE ======");
         super.output();
     }
 
-    private static class QuadNode {
-        public int depth = 1;
-        public int totalNodes = 1;
+    private static class QuadNodeVar extends QuadNode {
         public long rSum, gSum, bSum;
         public long rSumSq, gSumSq, bSumSq;
-        public QuadNode[] children = new QuadNode[4];
+        public QuadNodeVar() {
+            super();
+        }
     }
 
-    private static class QuadBuilder {
-        public static double threshold;
-        public static int minBlockSize;
+    public class VarianceQuadBuilder extends QuadBuilder {
 
-        public static QuadNode buildTree(BufferedImage image, BufferedImage result, int x, int y, int width, int height) {
-            QuadNode node = new QuadNode();
+        public VarianceQuadBuilder(double threshold, int minBlockSize) {
+            super(threshold, minBlockSize);
+        }
+    
+        @Override
+        public QuadNode buildTree(BufferedImage image, BufferedImage result, int x, int y, int width, int height) {
+            QuadNodeVar node = new QuadNodeVar();
+            
             if (width == 1 && height == 1) {
                 int rgb = image.getRGB(x, y);
                 int red = (rgb >> 16) & 0xFF;
@@ -77,13 +80,14 @@ public class CompressVariance extends CompressQuadtree {
 
             for (QuadNode child : node.children) {
                 if (child != null) {
-                    node.rSum += child.rSum;
-                    node.gSum += child.gSum;
-                    node.bSum += child.bSum;
+                    QuadNodeVar childVar = (QuadNodeVar) child;
+                    node.rSum += childVar.rSum;
+                    node.gSum += childVar.gSum;
+                    node.bSum += childVar.bSum;
 
-                    node.rSumSq += child.rSumSq;
-                    node.gSumSq += child.gSumSq;
-                    node.bSumSq += child.bSumSq;
+                    node.rSumSq += childVar.rSumSq;
+                    node.gSumSq += childVar.gSumSq;
+                    node.bSumSq += childVar.bSumSq;
 
                     maxChildDepth = Math.max(maxChildDepth, child.depth);
                     total += child.totalNodes;
@@ -118,7 +122,7 @@ public class CompressVariance extends CompressQuadtree {
             return node;
         }
 
-        private static double calculateVariance(QuadNode node, int pixelCount) {
+        private static double calculateVariance(QuadNodeVar node, int pixelCount) {
             if (pixelCount == 0) return 0;
             double rVar = (double) node.rSumSq / pixelCount - Math.pow((double) node.rSum / pixelCount, 2);
             double gVar = (double) node.gSumSq / pixelCount - Math.pow((double) node.gSum / pixelCount, 2);

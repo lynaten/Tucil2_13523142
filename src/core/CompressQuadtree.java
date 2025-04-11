@@ -85,4 +85,26 @@ public abstract class CompressQuadtree {
         System.out.printf("[OUTPUT] Gambar output disimpan di: %s\n", imageFileOutput.getAbsolutePath());
 
     }
+
+    protected abstract static class QuadNode {
+        public int depth = 1;
+        public int totalNodes = 1;
+        public QuadNode[] children = new QuadNode[4];
+
+        public QuadNode() {
+        }
+    }
+
+    protected abstract class QuadBuilder {
+        protected double threshold;
+        protected int minBlockSize;
+    
+        public QuadBuilder(double threshold, int minBlockSize) {
+            this.threshold = threshold;
+            this.minBlockSize = minBlockSize;
+        }
+
+        public abstract QuadNode buildTree(BufferedImage image, BufferedImage result, int x, int y, int width, int height);
+    }
+
 }
