@@ -1,3 +1,4 @@
+package app;
 import core.CompressEntropy;
 import core.CompressMAD;
 import core.CompressMPD;
