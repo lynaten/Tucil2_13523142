@@ -1,0 +1,3 @@
+@echo off
+echo [CLEAN] Removing compiled files...
+rmdir /s /q bin
